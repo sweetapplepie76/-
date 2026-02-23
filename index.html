@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>製茶工程シミュレーター</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; padding: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f4f4f4; }
+    </style>
+</head>
+<body>
+    <h1>製茶工程シミュレーター</h1>
+    <label>品種：</label>
+    <select id="cultivar">
+        <option value="ゆたかみどり">ゆたかみどり</option>
+        <option value="さえみどり">さえみどり</option>
+        <option value="あさつゆ">あさつゆ</option>
+    </select>
+    <button onclick="displayTimeline()">タイムライン生成</button>
+
+    <div id="result"></div>
+
+    <script src="script.js"></script>
+    <script>
+        function displayTimeline() {
+            const cultivar = document.getElementById('cultivar').value;
+            const timeline = generateBatchTimeline(new Date(), cultivar);
+            
+            let html = `<h3>${timeline.cultivar} の工程</h3><table><tr><th>工程</th><th>時間(分)</th><th>開始</th><th>終了</th></tr>`;
+            timeline.steps.forEach(s => {
+                html += `<tr><td>${s.name}</td><td>${s.duration}</td><td>${s.start}</td><td>${s.end}</td></tr>`;
+            });
+            html += '</table>';
+            document.getElementById('result').innerHTML = html;
+        }
+    </script>
+</body>
+</html>
