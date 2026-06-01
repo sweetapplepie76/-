@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>鹿屋茶生産支援アプリ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Shippori+Mincho:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b1a12;
+      --bg2: #112318;
+      --bg3: #1a3326;
+      --card: #162b1e;
+      --border: #2a4a34;
+      --green: #4ade80;
+      --green2: #22c55e;
+      --green3: #16a34a;
+      --teal: #2dd4bf;
+      --amber: #fbbf24;
+      --red: #f87171;
+      --blue: #60a5fa;
+      --text: #e8f5e9;
+      --text2: #9dbfa8;
+      --text3: #5a8a6a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    /* ヘッダー */
+    .header {
+      background: linear-gradient(180deg, #0b2218 0%, var(--bg) 100%);
+      padding: 20px 16px 16px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -30px; left: 50%; transform: translateX(-50%);
+      width: 300px; height: 120px;
+      background: radial-gradient(ellipse, rgba(74,222,128,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .header h1 {
+      font-family: 'Shippori Mincho', serif;
+      font-size: 22px;
+      color: var(--green);
+      letter-spacing: 0.05em;
+    }
+    .header .org {
+      font-size: 11px;
+      color: var(--text3);
+      margin-top: 4px;
+      letter-spacing: 0.08em;
+    }
+    .header .date-badge {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 11px;
+      background: var(--bg3);
+      color: var(--teal);
+      border: 1px solid var(--teal);
+      border-radius: 20px;
+      padding: 3px 12px;
+    }
+
+    /* タブナビ */
+    .tab-nav {
+      display: flex;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 12px 4px;
+      font-size: 11px;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-weight: 500;
+      background: none;
+      border: none;
+      color: var(--text3);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      border-bottom: 2px solid transparent;
+    }
+    .tab-btn .icon { font-size: 18px; }
+    .tab-btn.active {
+      color: var(--green);
+      border-bottom-color: var(--green);
+    }
+    .tab-btn:hover { color: var(--text); }
+
+    /* セクション */
+    .section { display: none; padding: 16px; }
+    .section.active { display: block; }
+
+    /* ── TAB 1: 栽培暦 ── */
+    .cal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .cal-title { font-family: 'Shippori Mincho', serif; font-size: 17px; color: var(--green); }
+    .month-nav { display: flex; gap: 8px; align-items: center; }
+    .month-nav button {
+      background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text); border-radius: 6px;
+      width: 32px; height: 32px; cursor: pointer; font-size: 16px;
+    }
+    .month-nav button:hover { border-color: var(--green); color: var(--green); }
+    #monthLabel { font-size: 14px; min-width: 60px; text-align: center; }
+
+    .cal-timeline {
+      position: relative;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: 110px repeat(12, 40px);
+      min-width: 600px;
+    }
+    .cal-month-header {
+      background: var(--bg3);
+      text-align: center;
+      font-size: 11px;
+      padding: 6px 0;
+      border-right: 1px solid var(--border);
+      color: var(--text2);
+    }
+    .cal-month-header.current-month {
+      color: var(--green);
+      background: rgba(74,222,128,0.1);
+    }
+    .cal-row-label {
+      font-size: 12px;
+      padding: 6px 8px;
+      color: var(--text2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+    }
+    .cal-cell {
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      height: 34px;
+      position: relative;
+    }
+    .cal-bar {
+      position: absolute;
+      top: 8px; bottom: 8px;
+      border-radius: 4px;
+      opacity: 0.85;
+    }
+    .bar-main { background: var(--green3); }
+    .bar-harvest { background: var(--amber); }
+    .bar-pest { background: var(--red); }
+    .bar-fert { background: var(--teal); }
+
+    .cal-legend {
+      display: flex; flex-wrap: wrap; gap: 10px;
+      margin-top: 12px; font-size: 11px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 5px; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 2px; }
+
+    /* 今月の作業 */
+    .task-cards { margin-top: 16px; }
+    .task-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+    .task-card-header {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 6px;
+    }
+    .task-name { font-size: 14px; font-weight: 700; }
+    .task-tag {
+      font-size: 10px; padding: 2px 8px;
+      border-radius: 10px; font-weight: 500;
+    }
+    .tag-harvest { background: rgba(251,191,36,0.2); color: var(--amber); }
+    .tag-fert    { background: rgba(45,212,191,0.2); color: var(--teal); }
+    .tag-pest    { background: rgba(248,113,113,0.2); color: var(--red); }
+    .tag-manage  { background: rgba(74,222,128,0.2);  color: var(--green); }
+    .task-detail { font-size: 12px; color: var(--text2); line-height: 1.6; }
+
+    /* ── TAB 2: 気象・積算温度 ── */
+    .weather-top {
+      background: linear-gradient(135deg, var(--bg3), var(--card));
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .weather-now {
+      display: flex; align-items: center; gap: 16px;
+    }
+    .weather-icon { font-size: 48px; }
+    .weather-temp { font-size: 42px; font-weight: 300; color: var(--text); }
+    .weather-temp sup { font-size: 18px; color: var(--text2); }
+    .weather-info { font-size: 12px; color: var(--text2); line-height: 2; }
+
+    .temp-section { margin-top: 16px; }
+    .temp-title {
+      font-family: 'Shippori Mincho', serif;
+      font-size: 15px; color: var(--teal);
+      margin-bottom: 10px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .temp-input-row {
+      display: flex; gap: 10px; margin-bottom: 12px;
+    }
+    .temp-input-row input {
+      flex: 1;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text);
+      padding: 10px 12px; font-size: 14px;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+    .temp-input-row input:focus {
+      outline: none; border-color: var(--teal);
+    }
+    .temp-input-row button {
+      background: var(--teal); color: #0b1a12;
+      border: none; border-radius: 8px;
+      padding: 0 16px; font-weight: 700;
+      font-size: 13px; cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+    .accum-bar-bg {
+      background: var(--bg3); border-radius: 8px;
+      height: 20px; overflow: hidden; margin-bottom: 6px;
+    }
+    .accum-bar-fill {
+      height: 100%; border-radius: 8px;
+      background: linear-gradient(90deg, var(--teal), var(--green));
+      transition: width 0.6s ease;
+    }
+    .accum-label {
+      display: flex; justify-content: space-between;
+      font-size: 12px; color: var(--text2); margin-bottom: 12px;
+    }
+    .threshold-cards {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .thresh-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px;
+    }
+    .thresh-name { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+    .thresh-val { font-size: 16px; font-weight: 700; }
+    .thresh-remain { font-size: 11px; margin-top: 3px; }
+    .ok { color: var(--green); }
+    .warn { color: var(--amber); }
+    .over { color: var(--red); }
+
+    /* 週間予報 */
+    .forecast-row {
+      display: flex; gap: 8px; overflow-x: auto;
+      padding: 4px 0 8px;
+    }
+    .forecast-day {
+      flex-shrink: 0;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 12px;
+      text-align: center; min-width: 68px;
+    }
+    .fc-day { font-size: 11px; color: var(--text2); }
+    .fc-icon { font-size: 24px; margin: 4px 0; }
+    .fc-high { font-size: 14px; font-weight: 700; }
+    .fc-low { font-size: 11px; color: var(--text2); }
+
+    /* ── TAB 3: 農薬検索 ── */
+    .search-box {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text);
+      font-size: 14px; margin-bottom: 14px;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+    .search-box:focus { outline: none; border-color: var(--green); }
+    .filter-chips {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;
+    }
+    .chip {
+      font-size: 11px; padding: 4px 12px;
+      border-radius: 20px; border: 1px solid var(--border);
+      background: var(--card); color: var(--text2);
+      cursor: pointer; transition: all 0.2s;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+    .chip.active { background: var(--green3); border-color: var(--green); color: var(--text); }
+    .pest-card {
+      background: var(--card); border-left: 3px solid var(--green3);
+      border-radius: 10px; padding: 14px; margin-bottom: 12px;
+    }
+    .pest-card.disease { border-left-color: var(--red); }
+    .pest-card.weed   { border-left-color: var(--amber); }
+    .pest-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .pest-name-main { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .pest-category {
+      font-size: 10px; padding: 2px 8px; border-radius: 10px;
+      background: rgba(74,222,128,0.15); color: var(--green); flex-shrink: 0;
+    }
+    .pest-category.disease { background: rgba(248,113,113,0.15); color: var(--red); }
+    .pest-category.weed { background: rgba(251,191,36,0.15); color: var(--amber); }
+    .info-row { font-size: 13px; margin: 4px 0; }
+    .info-label { color: var(--text3); font-weight: 500; margin-right: 4px; }
+    .note-box {
+      margin-top: 8px; font-size: 11px;
+      background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2);
+      border-radius: 6px; padding: 8px 10px;
+      color: var(--amber); line-height: 1.6;
+    }
+
+    /* ── TAB 4: 製茶工程 ── */
+    .process-tabs {
+      display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto;
+    }
+    .ptab {
+      flex-shrink: 0; padding: 7px 14px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text2);
+      font-size: 12px; cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+      transition: all 0.2s;
+    }
+    .ptab.active {
+      background: var(--green3); border-color: var(--green);
+      color: var(--text); font-weight: 700;
+    }
+    .process-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px; margin-bottom: 14px;
+    }
+    .process-step-title {
+      font-family: 'Shippori Mincho', serif;
+      font-size: 16px; color: var(--green);
+      margin-bottom: 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .step-badge {
+      background: var(--green3); color: var(--text);
+      font-size: 10px; padding: 2px 8px; border-radius: 10px;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+    .param-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .param-table th {
+      background: var(--bg3); color: var(--text2);
+      padding: 7px 10px; text-align: left;
+      font-weight: 500; font-size: 11px;
+      border-bottom: 1px solid var(--border);
+    }
+    .param-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+    .param-table tr:last-child td { border-bottom: none; }
+    .param-val { color: var(--teal); font-weight: 700; }
+    .process-note {
+      margin-top: 10px; font-size: 12px;
+      background: rgba(45,212,191,0.08);
+      border: 1px solid rgba(45,212,191,0.2);
+      border-radius: 6px; padding: 10px 12px;
+      color: var(--teal); line-height: 1.7;
+    }
+    .memo-area {
+      width: 100%;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text);
+      padding: 10px 12px; font-size: 13px;
+      font-family: 'Noto Sans JP', sans-serif;
+      resize: vertical; min-height: 90px;
+      margin-top: 8px;
+    }
+    .memo-area:focus { outline: none; border-color: var(--green); }
+    .save-btn {
+      background: var(--green3); color: var(--text);
+      border: none; border-radius: 8px;
+      padding: 9px 20px; font-size: 13px;
+      font-weight: 700; cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+      margin-top: 8px;
+    }
+    .save-btn:hover { background: var(--green2); }
+    .save-ok {
+      font-size: 12px; color: var(--green);
+      margin-left: 10px; opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .save-ok.show { opacity: 1; }
+
+    .no-result { text-align: center; color: var(--text3); padding: 30px; font-size: 13px; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header::before"></div>
+  <h1>🍵 鹿屋茶生産支援アプリ</h1>
+  <div class="org">大隅地域振興局 農業普及課</div>
+  <div class="date-badge" id="todayBadge"></div>
+</div>
+
+<!-- タブナビ -->
+<nav class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('calendar',this)">
+    <span class="icon">📅</span>栽培暦
+  </button>
+  <button class="tab-btn" onclick="switchTab('weather',this)">
+    <span class="icon">🌡️</span>気象
+  </button>
+  <button class="tab-btn" onclick="switchTab('pesticide',this)">
+    <span class="icon">🔍</span>農薬
+  </button>
+  <button class="tab-btn" onclick="switchTab('process',this)">
+    <span class="icon">⚙️</span>製茶
+  </button>
+</nav>
+
+<!-- ======== TAB 1: 栽培暦 ======== -->
+<div id="tab-calendar" class="section active">
+  <div class="cal-header">
+    <div class="cal-title">📅 年間栽培暦</div>
+    <div class="month-nav">
+      <button onclick="changeMonth(-1)">‹</button>
+      <span id="monthLabel"></span>
+      <button onclick="changeMonth(1)">›</button>
+    </div>
+  </div>
+
+  <div class="cal-timeline">
+    <div class="cal-grid" id="calGrid"></div>
+  </div>
+
+  <div class="cal-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green3)"></div>管理作業</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>摘採</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>病害虫防除</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--teal)"></div>施肥</div>
+  </div>
+
+  <div class="task-cards">
+    <div style="font-family:'Shippori Mincho',serif; font-size:15px; color:var(--amber); margin:16px 0 10px; display:flex; align-items:center; gap:6px;">
+      ⚑ <span id="thisMonthLabel"></span>の主な作業
+    </div>
+    <div id="taskList"></div>
+  </div>
+</div>
+
+<!-- ======== TAB 2: 気象・積算温度 ======== -->
+<div id="tab-weather" class="section">
+
+  <div class="weather-top">
+    <div style="font-family:'Shippori Mincho',serif; font-size:14px; color:var(--teal); margin-bottom:12px;">鹿屋市 現在の気象（参考）</div>
+    <div class="weather-now">
+      <div class="weather-icon">⛅</div>
+      <div>
+        <div class="weather-temp">22<sup>℃</sup></div>
+        <div class="weather-info">
+          湿度：68%　風速：3.2m/s<br>
+          日照：4.5h　降水：0mm
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 週間予報 -->
+  <div style="font-family:'Shippori Mincho',serif; font-size:14px; color:var(--text2); margin-bottom:10px;">週間予報</div>
+  <div class="forecast-row" id="forecastRow"></div>
+
+  <!-- 積算温度 -->
+  <div class="temp-section">
+    <div class="temp-title">🌡️ 積算温度管理</div>
+    <div class="temp-input-row">
+      <input type="number" id="todayTemp" placeholder="今日の最高気温 (℃)" step="0.1">
+      <button onclick="addTemp()">追加</button>
+    </div>
+    <div style="font-size:12px; color:var(--text2); margin-bottom:8px;">
+      基準温度：10℃ | 積算開始：4月1日
+    </div>
+    <div class="accum-bar-bg">
+      <div class="accum-bar-fill" id="accumBar" style="width:0%"></div>
+    </div>
+    <div class="accum-label">
+      <span>積算温度：<b id="accumVal">0</b>℃・日</span>
+      <span id="accumReset" onclick="resetAccum()" style="cursor:pointer; color:var(--text3);">リセット</span>
+    </div>
+    <div class="threshold-cards" id="threshCards"></div>
+  </div>
+</div>
+
+<!-- ======== TAB 3: 農薬検索 ======== -->
+<div id="tab-pesticide" class="section">
+  <input type="text" id="searchBar" class="search-box" placeholder="🔍 病害虫名・薬剤名で検索...">
+  <div class="filter-chips">
+    <div class="chip active" data-filter="all" onclick="setFilter(this)">すべて</div>
+    <div class="chip" data-filter="insect" onclick="setFilter(this)">害虫</div>
+    <div class="chip" data-filter="disease" onclick="setFilter(this)">病害</div>
+    <div class="chip" data-filter="mite" onclick="setFilter(this)">ダニ</div>
+  </div>
+  <div id="pestList"></div>
+</div>
+
+<!-- ======== TAB 4: 製茶工程 ======== -->
+<div id="tab-process" class="section">
+  <div class="process-tabs" id="processTabs"></div>
+  <div id="processContent"></div>
+</div>
+
+
+<script>
+// ===========================
+// 共通
+// ===========================
+const today = new Date();
+document.getElementById('todayBadge').textContent =
+  today.getFullYear() + '年' + (today.getMonth()+1) + '月' + today.getDate() + '日（' +
+  ['日','月','火','水','木','金','土'][today.getDay()] + '）';
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+
+// ===========================
+// TAB 1: 栽培暦データ
+// ===========================
+// rows: { label, type(main/harvest/pest/fert), months: [[start,end], ...] }
+// months 1-12 の中で [start,end] は 0-1 の比率
+const calRows = [
+  { label: '整枝・刈り込み', type:'main',    bars:[[1,0,1],[2,0,1],[3,0,0.5],[11,0,1],[12,0,1]] },
+  { label: '施肥（元肥）',    type:'fert',    bars:[[2,0,1],[3,0,1]] },
+  { label: '施肥（追肥）',    type:'fert',    bars:[[5,0,0.5],[7,0,0.5],[9,0,0.5]] },
+  { label: '一番茶摘採',      type:'harvest', bars:[[4,0.4,1],[5,0,0.6]] },
+  { label: '二番茶摘採',      type:'harvest', bars:[[6,0.3,1],[7,0,0.5]] },
+  { label: '三番茶摘採',      type:'harvest', bars:[[8,0,0.7]] },
+  { label: '秋整枝',          type:'main',    bars:[[8,0.7,1],[9,0,1]] },
+  { label: '病害虫防除',      type:'pest',    bars:[[5,0.5,1],[6,0,0.5],[8,0,0.5],[9,0,1]] },
+];
+
+const barColorMap = { main:'var(--green3)', harvest:'var(--amber)', pest:'var(--red)', fert:'var(--teal)' };
+
+let currentMonth = today.getMonth() + 1; // 1-12
+
+const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+function buildCalGrid() {
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+
+  // ヘッダー行
+  const cornerCell = document.createElement('div');
+  cornerCell.style.cssText = 'background:var(--bg2); padding:6px 0; font-size:11px; color:var(--text3); text-align:center; border-right:1px solid var(--border); border-bottom:1px solid var(--border);';
+  cornerCell.textContent = '作業項目';
+  grid.appendChild(cornerCell);
+
+  for (let m = 1; m <= 12; m++) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-month-header' + (m === currentMonth ? ' current-month' : '');
+    cell.textContent = m + '月';
+    grid.appendChild(cell);
+  }
+
+  // データ行
+  calRows.forEach(row => {
+    const label = document.createElement('div');
+    label.className = 'cal-row-label';
+    label.textContent = row.label;
+    grid.appendChild(label);
+
+    for (let m = 1; m <= 12; m++) {
+      const cell = document.createElement('div');
+      cell.className = 'cal-cell';
+      if (m === currentMonth) cell.style.background = 'rgba(74,222,128,0.05)';
+
+      const bar = row.bars.find(b => b[0] === m);
+      if (bar) {
+        const fill = document.createElement('div');
+        fill.className = 'cal-bar';
+        fill.style.background = barColorMap[row.type];
+        fill.style.left = (bar[1] * 100) + '%';
+        fill.style.right = ((1 - bar[2]) * 100) + '%';
+        cell.appendChild(fill);
+      }
+      grid.appendChild(cell);
+    }
+  });
+}
+
+function changeMonth(dir) {
+  currentMonth = ((currentMonth - 1 + dir + 12) % 12) + 1;
+  document.getElementById('monthLabel').textContent = currentMonth + '月';
+  buildCalGrid();
+  renderTasks();
+}
+
+document.getElementById('monthLabel').textContent = currentMonth + '月';
+
+// 今月の作業データ
+const monthlyTasks = {
+  1:  [{ name:'整枝・刈り込み', tag:'manage', detail:'深刈り・中切りを実施。樹形を整え光の透過性を高める。切り落とし枝の片付けも徹底。' }],
+  2:  [{ name:'整枝・刈り込み', tag:'manage', detail:'引き続き樹形管理。霜害の確認も行う。' },
+       { name:'元肥施用', tag:'fert', detail:'窒素30〜40kg/10a を目安に施肥。有機質肥料を中心に使用。' }],
+  3:  [{ name:'萌芽期管理', tag:'manage', detail:'芽の発育状況を確認。積算温度モデルと照合して萌芽期を予測。' },
+       { name:'元肥仕上げ', tag:'fert', detail:'追加施肥と土壌管理。pH 4.0〜5.0 を維持。' }],
+  4:  [{ name:'一番茶萌芽期', tag:'harvest', detail:'萌芽〜2葉期頃から収穫開始準備。新芽の生育状況を毎日観察。' },
+       { name:'病害虫確認', tag:'pest', detail:'クワシロカイガラムシ越冬卵のふ化開始を確認。薬剤散布準備。' }],
+  5:  [{ name:'一番茶摘採', tag:'harvest', detail:'品質最優先。早朝摘採で鮮度を保持。摘採後すぐに工場へ搬入。' },
+       { name:'クワシロ防除', tag:'pest', detail:'1齢幼虫ピーク時（5月下旬〜6月上旬）にエスティーム乳剤散布。' }],
+  6:  [{ name:'二番茶準備・摘採', tag:'harvest', detail:'一番茶後の芽の伸びを確認しながら摘採適期を判断。' },
+       { name:'追肥（二番茶前）', tag:'fert', detail:'窒素20kg/10a を目安に施肥。' }],
+  7:  [{ name:'二番茶仕上げ', tag:'harvest', detail:'梅雨明け前後に収穫完了を目指す。' },
+       { name:'チャハマキ防除', tag:'pest', detail:'発生が確認されたら速やかに薬剤散布。' }],
+  8:  [{ name:'三番茶摘採', tag:'harvest', detail:'高温による品質低下に注意。摘採後の水分管理が重要。' },
+       { name:'秋整枝開始', tag:'manage', detail:'三番茶摘採後すぐに秋整枝を行う。枝の整理と通風確保。' }],
+  9:  [{ name:'秋整枝・深刈り', tag:'manage', detail:'来年の一番茶に向けた樹冠管理。深さ・角度を統一する。' },
+       { name:'病害虫最終確認', tag:'pest', detail:'カンザワハダニ・チャノナガサビダニの発生確認と薬剤防除。' }],
+  10: [{ name:'秋季施肥', tag:'fert', detail:'秋の追肥。有機物を中心に。土壌改良資材の投入も検討。' }],
+  11: [{ name:'整枝・樹形管理', tag:'manage', detail:'冬に向けた剪定。霜害防止のための被覆資材準備。' }],
+  12: [{ name:'冬季管理', tag:'manage', detail:'霜よけ被覆の設置。土壌凍結対策。ポリマルチ検討。' }],
+};
+
+function renderTasks() {
+  document.getElementById('thisMonthLabel').textContent = currentMonth + '月';
+  const tasks = monthlyTasks[currentMonth] || [];
+  const list = document.getElementById('taskList');
+  if (tasks.length === 0) {
+    list.innerHTML = '<div class="no-result">この月の主要作業データはありません</div>';
+    return;
+  }
+  list.innerHTML = tasks.map(t => `
+    <div class="task-card">
+      <div class="task-card-header">
+        <div class="task-name">${t.name}</div>
+        <div class="task-tag tag-${t.tag}">${{harvest:'摘採',fert:'施肥',pest:'防除',manage:'管理'}[t.tag]}</div>
+      </div>
+      <div class="task-detail">${t.detail}</div>
+    </div>
+  `).join('');
+}
+
+buildCalGrid();
+renderTasks();
+
+
+// ===========================
+// TAB 2: 気象・積算温度
+// ===========================
+const forecast = [
+  { day:'今日', icon:'⛅', high:22, low:15 },
+  { day:'明日', icon:'🌤️', high:24, low:16 },
+  { day:'水',   icon:'🌧️', high:18, low:13 },
+  { day:'木',   icon:'🌦️', high:20, low:14 },
+  { day:'金',   icon:'☀️', high:25, low:17 },
+  { day:'土',   icon:'☀️', high:27, low:18 },
+  { day:'日',   icon:'🌤️', high:26, low:17 },
+];
+
+document.getElementById('forecastRow').innerHTML = forecast.map(f => `
+  <div class="forecast-day">
+    <div class="fc-day">${f.day}</div>
+    <div class="fc-icon">${f.icon}</div>
+    <div class="fc-high">${f.high}℃</div>
+    <div class="fc-low">${f.low}℃</div>
+  </div>
+`).join('');
+
+const thresholds = [
+  { name: 'クワシロカイガラムシ（1齢幼虫）', target: 180, desc: '防除開始' },
+  { name: 'チャノナガサビダニ', target: 150, desc: '発生ピーク' },
+  { name: '一番茶萌芽目安', target: 100, desc: '摘採準備' },
+  { name: '二番茶萌芽目安', target: 200, desc: '摘採準備' },
+];
+
+let accumTemp = parseFloat(localStorage.getItem('accumTemp') || '0');
+
+function updateAccum() {
+  const maxTarget = Math.max(...thresholds.map(t => t.target));
+  const pct = Math.min(100, (accumTemp / maxTarget) * 100);
+  document.getElementById('accumBar').style.width = pct + '%';
+  document.getElementById('accumVal').textContent = accumTemp.toFixed(1);
+
+  document.getElementById('threshCards').innerHTML = thresholds.map(t => {
+    const remain = t.target - accumTemp;
+    let cls = remain > 20 ? 'ok' : remain > 0 ? 'warn' : 'over';
+    let status = remain > 0 ? `あと ${remain.toFixed(0)}℃・日` : '⚠ 到達済み';
+    return `
+      <div class="thresh-card">
+        <div class="thresh-name">${t.name}</div>
+        <div class="thresh-val ${cls}">${t.target}℃・日</div>
+        <div class="thresh-remain ${cls}">${t.desc}：${status}</div>
+      </div>`;
+  }).join('');
+}
+
+function addTemp() {
+  const val = parseFloat(document.getElementById('todayTemp').value);
+  if (isNaN(val)) return;
+  const effective = Math.max(0, val - 10);
+  accumTemp = Math.round((accumTemp + effective) * 10) / 10;
+  localStorage.setItem('accumTemp', accumTemp);
+  document.getElementById('todayTemp').value = '';
+  updateAccum();
+}
+
+function resetAccum() {
+  if (confirm('積算温度をリセットしますか？')) {
+    accumTemp = 0;
+    localStorage.setItem('accumTemp', 0);
+    updateAccum();
+  }
+}
+
+updateAccum();
+
+
+// ===========================
+// TAB 3: 農薬検索
+// ===========================
+const pestData = [
+  { id:'1', cat:'insect', pestName:'クワシロカイガラムシ', chemical:'エスティーム乳剤', timing:'1齢幼虫ピーク時（5月下旬〜6月上旬）', note:'生葉投入目安：1回あたり120kg / 粗揉機回転数：標準仕込み時32〜34回転' },
+  { id:'2', cat:'mite',   pestName:'カンザワハダニ',       chemical:'マイトコーネフロアブル', timing:'発生初期（秋季または春季）', note:'標準蒸し：30秒〜40秒' },
+  { id:'3', cat:'mite',   pestName:'チャノナガサビダニ',   chemical:'サンマイト水和剤', timing:'一番茶摘採後〜二番茶萌芽期', note:'積算温度モデルによる発生予測を活用してください' },
+  { id:'4', cat:'disease',pestName:'炭疽病（炭そ病）',    chemical:'アミスター10フロアブル', timing:'新葉展開期（萌芽期〜1葉期）', note:'早期発見とバンカープランツ周辺の観察が重要です' },
+  { id:'5', cat:'insect', pestName:'チャハマキ',           chemical:'フェニックスフロアブル', timing:'幼虫発生初期（各世代）', note:'捲葉（巻き葉）を開いて幼虫密度を確認してから散布' },
+  { id:'6', cat:'insect', pestName:'ツノロウムシ',         chemical:'マシン油乳剤', timing:'休眠期（12月〜2月）または6月上旬', note:'休眠期散布は展着剤不要。高濃度でも薬害しにくい時期。' },
+  { id:'7', cat:'disease',pestName:'輪斑病',               chemical:'ベンレート水和剤', timing:'6〜10月の発生確認時', note:'多湿条件で多発。通風改善も組み合わせて実施。' },
+  { id:'8', cat:'mite',   pestName:'チャノホコリダニ',     chemical:'コロマイト乳剤', timing:'発生初期（春〜秋）', note:'薬剤ローテーションで抵抗性回避を。' },
+];
+
+let currentFilter = 'all';
+
+const catLabel = { insect:'害虫', disease:'病害', mite:'ダニ' };
+const catClass = { insect:'', disease:'disease', mite:'' };
+
+function setFilter(el) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentFilter = el.dataset.filter;
+  renderPests();
+}
+
+function renderPests() {
+  const kw = document.getElementById('searchBar').value.toLowerCase();
+  let data = pestData;
+  if (currentFilter !== 'all') data = data.filter(d => d.cat === currentFilter);
+  if (kw) data = data.filter(d => d.pestName.includes(kw) || d.chemical.toLowerCase().includes(kw));
+
+  const list = document.getElementById('pestList');
+  if (data.length === 0) {
+    list.innerHTML = '<div class="no-result">該当する病害虫・薬剤が見つかりません</div>';
+    return;
+  }
+  list.innerHTML = data.map(d => `
+    <div class="pest-card ${catClass[d.cat]}">
+      <div class="pest-top">
+        <div class="pest-name-main">🔍 ${d.pestName}</div>
+        <div class="pest-category ${catClass[d.cat]}">${catLabel[d.cat]}</div>
+      </div>
+      <div class="info-row"><span class="info-label">推奨薬剤：</span>${d.chemical}</div>
+      <div class="info-row"><span class="info-label">防除適期：</span>${d.timing}</div>
+      <div class="note-box">📌 ${d.note}</div>
+    </div>
+  `).join('');
+}
+
+document.getElementById('searchBar').addEventListener('input', renderPests);
+renderPests();
+
+
+// ===========================
+// TAB 4: 製茶工程
+// ===========================
+const processData = [
+  {
+    id: 'steam', label: '蒸し',
+    params: [
+      { item:'蒸し時間（普通蒸し）', val:'30〜40秒', note:'品質基準' },
+      { item:'蒸し時間（深蒸し）',   val:'60〜120秒', note:'当地標準' },
+      { item:'蒸し圧力',            val:'0.05〜0.1MPa', note:'' },
+      { item:'原料水分',            val:'75〜78%', note:'摘採直後' },
+    ],
+    note:'蒸し不足は青臭さ・赤変の原因に。蒸しすぎると揉みがきかず製品品質が低下。葉の厚み・状態を確認して時間を調整してください。',
+    memoKey: 'memo_steam'
+  },
+  {
+    id: 'souju', label: '粗揉',
+    params: [
+      { item:'生葉投入量', val:'100〜130kg/回', note:'機種により異なる' },
+      { item:'回転数',     val:'32〜34回転',    note:'標準仕込み時' },
+      { item:'処理時間',   val:'30〜40分',       note:'' },
+      { item:'仕上がり水分', val:'45〜55%',      note:'目安' },
+    ],
+    note:'投入量が多すぎると揉み不足・ムラの原因。少なすぎると過揉みになりやすい。温度設定も重要（90〜110℃）。',
+    memoKey: 'memo_souju'
+  },
+  {
+    id: 'jyunen', label: '揉捻',
+    params: [
+      { item:'揉み時間',   val:'20〜30分', note:'' },
+      { item:'圧力段階',   val:'弱→中→強→中', note:'' },
+      { item:'水分目安',   val:'35〜40%', note:'揉捻後' },
+    ],
+    note:'過揉みによる組織破壊に注意。お茶の形状（撚り）に大きく影響。中揉機・精揉機との連携で品質安定化。',
+    memoKey: 'memo_jyunen'
+  },
+  {
+    id: 'seijyu', label: '精揉',
+    params: [
+      { item:'回転数',     val:'60〜70rpm', note:'' },
+      { item:'処理時間',   val:'40〜60分', note:'' },
+      { item:'水分目安',   val:'12〜15%', note:'精揉終了時' },
+      { item:'温度設定',   val:'75〜85℃', note:'' },
+    ],
+    note:'撚りの均一性と光沢を出す重要な工程。温度が高すぎると茶が焦げやすいので注意。',
+    memoKey: 'memo_seijyu'
+  },
+  {
+    id: 'kanso', label: '乾燥',
+    params: [
+      { item:'乾燥温度（初期）', val:'110〜120℃', note:'' },
+      { item:'乾燥温度（仕上）', val:'85〜95℃',  note:'' },
+      { item:'最終水分',         val:'4〜5%',     note:'荒茶基準' },
+      { item:'処理時間',         val:'20〜30分',  note:'' },
+    ],
+    note:'最終水分が高いと保存性・品質に問題が生じる。季節・天候により調整が必要。',
+    memoKey: 'memo_kanso'
+  },
+];
+
+let currentProcess = 'steam';
+
+function buildProcessTabs() {
+  document.getElementById('processTabs').innerHTML = processData.map(p => `
+    <div class="ptab ${p.id === currentProcess ? 'active' : ''}"
+         onclick="switchProcess('${p.id}',this)">${p.label}</div>
+  `).join('');
+}
+
+function switchProcess(id, el) {
+  saveMemo();
+  currentProcess = id;
+  document.querySelectorAll('.ptab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderProcess();
+}
+
+function renderProcess() {
+  const p = processData.find(d => d.id === currentProcess);
+  const savedMemo = localStorage.getItem(p.memoKey) || '';
+  document.getElementById('processContent').innerHTML = `
+    <div class="process-card">
+      <div class="process-step-title">
+        ⚙️ ${p.label}工程
+        <span class="step-badge">製茶工程管理</span>
+      </div>
+      <table class="param-table">
+        <thead>
+          <tr><th>項目</th><th>標準値</th><th>備考</th></tr>
+        </thead>
+        <tbody>
+          ${p.params.map(r => `
+            <tr>
+              <td>${r.item}</td>
+              <td class="param-val">${r.val}</td>
+              <td style="font-size:11px; color:var(--text3)">${r.note}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div class="process-note">💡 ${p.note}</div>
+    </div>
+    <div class="process-card">
+      <div style="font-size:13px; color:var(--text2); margin-bottom:6px;">📝 ${p.label}メモ（保存されます）</div>
+      <textarea class="memo-area" id="memoArea" placeholder="気づき・設定値・特記事項を記録...">${savedMemo}</textarea>
+      <div style="display:flex; align-items:center;">
+        <button class="save-btn" onclick="saveMemo(true)">保存</button>
+        <span class="save-ok" id="saveOk">✓ 保存しました</span>
+      </div>
+    </div>
+  `;
+}
+
+function saveMemo(showMsg) {
+  const p = processData.find(d => d.id === currentProcess);
+  const el = document.getElementById('memoArea');
+  if (!el) return;
+  localStorage.setItem(p.memoKey, el.value);
+  if (showMsg) {
+    const ok = document.getElementById('saveOk');
+    ok.classList.add('show');
+    setTimeout(() => ok.classList.remove('show'), 1800);
+  }
+}
+
+buildProcessTabs();
+renderProcess();
+</script>
+</body>
+</html>
